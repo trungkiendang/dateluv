@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:date_luv/l10n/generated/app_localizations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/couple_profile.dart';
 
@@ -19,80 +21,128 @@ class ShareCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 1080,
-      height: 1920,
-      decoration: BoxDecoration(
-        color: AppColors.darkSurface,
-        image: profile.backgroundImagePath != null
-            ? DecorationImage(
-                image: FileImage(File(profile.backgroundImagePath!)),
-                fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(
-                  Colors.black.withOpacity(0.5),
-                  BlendMode.darken,
-                ),
-              )
-            : null,
+    final l10n = AppLocalizations.of(context)!;
+
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: 360,
+        height: 640,
+        decoration: BoxDecoration(
+          color: AppColors.darkSurface,
+          image: _getBackgroundImage(),
+        ),
+        child: _buildTemplate(l10n),
       ),
-      child: _buildTemplate(),
     );
   }
 
-  Widget _buildTemplate() {
+  DecorationImage? _getBackgroundImage() {
+    if (profile.backgroundImagePath == null) return null;
+    final file = File(profile.backgroundImagePath!);
+    if (!file.existsSync()) return null;
+    
+    return DecorationImage(
+      image: FileImage(file),
+      fit: BoxFit.cover,
+      colorFilter: ColorFilter.mode(
+        Colors.black.withValues(alpha: 0.6),
+        BlendMode.darken,
+      ),
+    );
+  }
+
+  Widget _buildTemplate(AppLocalizations l10n) {
     switch (template) {
       case ShareTemplate.sideBySide:
-        return _buildSideBySide();
+        return _buildSideBySide(l10n);
       case ShareTemplate.poster:
-        return _buildPoster();
+        return _buildPoster(l10n);
       case ShareTemplate.classic:
-        return _buildClassic();
+        return _buildClassic(l10n);
     }
   }
 
-  Widget _buildClassic() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          '${profile.person1Name} ❤️ ${profile.person2Name}',
-          style: const TextStyle(fontSize: 48, color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 100),
-        Text(
-          '$daysTogether',
-          style: const TextStyle(fontSize: 200, color: AppColors.primary, fontWeight: FontWeight.w900),
-        ),
-        const Text(
-          'NGÀY BÊN NHAU',
-          style: TextStyle(fontSize: 40, color: Colors.white70, letterSpacing: 10),
-        ),
-      ],
+  Widget _buildClassic(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            '${profile.person1Name} ❤️ ${profile.person2Name}',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.nunito(
+              fontSize: 24, 
+              color: Colors.white, 
+              fontWeight: FontWeight.bold
+            ),
+          ),
+          const SizedBox(height: 40),
+          Text(
+            '$daysTogether',
+            style: GoogleFonts.nunito(
+              fontSize: 100, 
+              color: AppColors.primary, 
+              fontWeight: FontWeight.w900,
+              height: 1.0,
+            ),
+          ),
+          Text(
+            l10n.daysTogether.toUpperCase(),
+            style: GoogleFonts.nunito(
+              fontSize: 18, 
+              color: Colors.white70, 
+              letterSpacing: 4,
+              fontWeight: FontWeight.w600
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildSideBySide() {
+  Widget _buildSideBySide(AppLocalizations l10n) {
     return Center(
-      child: Container(
-        padding: const EdgeInsets.all(60),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
              Row(
                mainAxisAlignment: MainAxisAlignment.center,
                children: [
-                 _avatar(profile.person1PhotoPath),
-                 const Padding(
-                   padding: EdgeInsets.symmetric(horizontal: 40),
-                   child: Icon(Icons.favorite, color: AppColors.primary, size: 80),
+                 _avatar(profile.person1PhotoPath, size: 100),
+                 Padding(
+                   padding: const EdgeInsets.symmetric(horizontal: 16),
+                   child: ShaderMask(
+                     shaderCallback: (bounds) => const LinearGradient(
+                       colors: AppColors.primaryGradient,
+                     ).createShader(bounds),
+                     child: const Icon(Icons.favorite, color: Colors.white, size: 40),
+                   ),
                  ),
-                 _avatar(profile.person2PhotoPath),
+                 _avatar(profile.person2PhotoPath, size: 100),
                ],
              ),
-             const SizedBox(height: 60),
+             const SizedBox(height: 32),
              Text(
-                '$daysTogether Days',
-                style: const TextStyle(fontSize: 120, color: Colors.white, fontWeight: FontWeight.w800),
+                '$daysTogether ${l10n.days}',
+                style: GoogleFonts.nunito(
+                  fontSize: 48, 
+                  color: Colors.white, 
+                  fontWeight: FontWeight.w900
+                ),
+             ),
+             const SizedBox(height: 8),
+             Text(
+                '${profile.person1Name} & ${profile.person2Name}',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.nunito(
+                  fontSize: 16, 
+                  color: Colors.white70,
+                  letterSpacing: 1
+                ),
              ),
           ],
         ),
@@ -100,27 +150,48 @@ class ShareCardWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildPoster() {
+  Widget _buildPoster(AppLocalizations l10n) {
      return Stack(
        children: [
          Positioned(
-           bottom: 100,
-           left: 100,
+           bottom: 60,
+           left: 30,
+           right: 30,
            child: Column(
              crossAxisAlignment: CrossAxisAlignment.start,
              children: [
                Text(
                  '$daysTogether',
-                 style: const TextStyle(fontSize: 300, color: Colors.white, fontWeight: FontWeight.w900, height: 0.8),
+                 style: GoogleFonts.nunito(
+                   fontSize: 120, 
+                   color: Colors.white, 
+                   fontWeight: FontWeight.w900, 
+                   height: 0.8
+                 ),
                ),
-               const Text(
-                 'DAYS OF LOVE',
-                 style: TextStyle(fontSize: 60, color: AppColors.primary, fontWeight: FontWeight.bold),
+               Text(
+                 l10n.journeyBegins.split('\n').first.toUpperCase(),
+                 style: GoogleFonts.nunito(
+                   fontSize: 24, 
+                   color: AppColors.primary, 
+                   fontWeight: FontWeight.w800,
+                   letterSpacing: 2
+                 ),
                ),
-               const SizedBox(height: 40),
+               const SizedBox(height: 16),
+               Container(
+                 height: 3,
+                 width: 80,
+                 color: AppColors.primary,
+               ),
+               const SizedBox(height: 20),
                Text(
                  '${profile.person1Name} & ${profile.person2Name}',
-                 style: const TextStyle(fontSize: 40, color: Colors.white70),
+                 style: GoogleFonts.nunito(
+                   fontSize: 20, 
+                   color: Colors.white.withValues(alpha: 0.9),
+                   fontWeight: FontWeight.w600
+                 ),
                ),
              ],
            ),
@@ -129,17 +200,33 @@ class ShareCardWidget extends StatelessWidget {
      );
   }
 
-  Widget _avatar(String? path) {
+  Widget _avatar(String? path, {double size = 80}) {
+    DecorationImage? image;
+    if (path != null) {
+      final file = File(path);
+      if (file.existsSync()) {
+        image = DecorationImage(image: FileImage(file), fit: BoxFit.cover);
+      }
+    }
+
     return Container(
-      width: 300,
-      height: 300,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 8),
-        image: path != null
-            ? DecorationImage(image: FileImage(File(path)), fit: BoxFit.cover)
-            : null,
+        border: Border.all(color: Colors.white, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 10,
+          )
+        ],
+        image: image,
+        color: AppColors.darkCard,
       ),
+      child: image == null 
+        ? Icon(Icons.person, size: size * 0.5, color: Colors.white24) 
+        : null,
     );
   }
 }

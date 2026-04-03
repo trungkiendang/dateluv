@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:date_luv/l10n/generated/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
@@ -58,6 +59,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Consumer<AppProvider>(
       builder: (context, provider, _) {
         if (!provider.hasProfile) {
@@ -78,20 +81,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 opacity: _fadeAnimation,
                 child: Column(
                   children: [
-                    _buildAppBar(context),
+                    _buildAppBar(context, l10n),
                     Expanded(
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: Column(
                           children: [
                             const SizedBox(height: 24),
-                            _buildCoupleSection(profile),
+                            _buildCoupleSection(profile, l10n),
                             const SizedBox(height: 32),
-                            _buildCounterSection(),
+                            _buildCounterSection(l10n),
                             const SizedBox(height: 32),
-                            _buildQuickActions(context),
+                            _buildQuickActions(context, l10n),
                             const SizedBox(height: 32),
-                            _buildUpcomingMilestone(context, provider),
+                            _buildUpcomingMilestone(context, provider, l10n),
                             const SizedBox(height: 24),
                           ],
                         ),
@@ -156,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 height: 200,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.primary.withOpacity(0.08),
+                  color: AppColors.primary.withValues(alpha: 0.08),
                 ),
               ),
             ),
@@ -168,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 height: 150,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.secondary.withOpacity(0.06),
+                  color: AppColors.secondary.withValues(alpha: 0.06),
                 ),
               ),
             ),
@@ -178,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildAppBar(BuildContext context) {
+  Widget _buildAppBar(BuildContext context, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: Row(
@@ -188,9 +191,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             shaderCallback: (bounds) => const LinearGradient(
               colors: AppColors.primaryGradient,
             ).createShader(bounds),
-            child: const Text(
-              'Date Luv',
-              style: TextStyle(
+            child: Text(
+              l10n.appTitle,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
                 color: Colors.white,
@@ -210,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       isScrollControlled: true,
                       builder: (context) => ShareBottomSheet(
                         profile: provider.coupleProfile!,
-                        daysTogether: provider.coupleProfile!.startDate.difference(DateTime.now()).inDays.abs(),
+                        daysTogether: _timeData['totalDays'] ?? 0,
                       ),
                     );
                   }
@@ -218,22 +221,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
+                    color: Colors.white.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                   ),
                   child: const Icon(Icons.share_outlined, color: Colors.white70, size: 22),
                 ),
               ),
+
               const SizedBox(width: 12),
               GestureDetector(
                 onTap: () => context.push('/settings'),
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
+                    color: Colors.white.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                   ),
                   child: const Icon(Icons.settings_outlined, color: Colors.white70, size: 22),
                 ),
@@ -245,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildCoupleSection(profile) {
+  Widget _buildCoupleSection(profile, AppLocalizations l10n) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -264,7 +268,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               const HeartPulseWidget(size: 36),
               const SizedBox(height: 4),
               Text(
-                '${_timeData['totalDays'] ?? 0} ngày',
+                '${_timeData['totalDays'] ?? 0} ${l10n.days}',
                 style: const TextStyle(
                   color: AppColors.primary,
                   fontSize: 12,
@@ -300,18 +304,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             gradient: LinearGradient(colors: colors),
             boxShadow: [
               BoxShadow(
-                color: colors.first.withOpacity(0.4),
+                color: colors.first.withValues(alpha: 0.4),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
             ],
-            border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
           ),
           child: photoPath != null
               ? ClipOval(
                   child: Image.file(File(photoPath), fit: BoxFit.cover),
                 )
-              : Icon(Icons.person, color: Colors.white, size: 38),
+              : const Icon(Icons.person, color: Colors.white, size: 38),
         ),
         const SizedBox(height: 8),
         Text(
@@ -326,7 +330,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildCounterSection() {
+  Widget _buildCounterSection(AppLocalizations l10n) {
     final years = _timeData['years'] ?? 0;
     final months = _timeData['months'] ?? 0;
     final days = _timeData['days'] ?? 0;
@@ -339,9 +343,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Column(
         children: [
           Text(
-            'Thời gian bên nhau',
+            l10n.timeTogether,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
@@ -350,22 +354,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              CounterBlock(value: DateHelper.twoDigit(years), label: 'Năm'),
+              CounterBlock(value: DateHelper.twoDigit(years), label: l10n.years),
               _buildSeparator(),
-              CounterBlock(value: DateHelper.twoDigit(months), label: 'Tháng'),
+              CounterBlock(value: DateHelper.twoDigit(months), label: l10n.months),
               _buildSeparator(),
-              CounterBlock(value: DateHelper.twoDigit(days), label: 'Ngày'),
+              CounterBlock(value: DateHelper.twoDigit(days), label: l10n.days),
             ],
           ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              CounterBlock(value: DateHelper.twoDigit(hours), label: 'Giờ'),
+              CounterBlock(value: DateHelper.twoDigit(hours), label: l10n.hours),
               _buildSeparator(),
-              CounterBlock(value: DateHelper.twoDigit(minutes), label: 'Phút'),
+              CounterBlock(value: DateHelper.twoDigit(minutes), label: l10n.minutes),
               _buildSeparator(),
-              CounterBlock(value: DateHelper.twoDigit(seconds), label: 'Giây'),
+              CounterBlock(value: DateHelper.twoDigit(seconds), label: l10n.seconds),
             ],
           ),
         ],
@@ -377,20 +381,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Text(
       ':',
       style: TextStyle(
-        color: AppColors.primary.withOpacity(0.6),
+        color: AppColors.primary.withValues(alpha: 0.6),
         fontSize: 28,
         fontWeight: FontWeight.w800,
       ),
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
+  Widget _buildQuickActions(BuildContext context, AppLocalizations l10n) {
     return Row(
       children: [
         Expanded(
           child: _QuickActionButton(
             icon: Icons.add_photo_alternate_outlined,
-            label: 'Thêm kỷ niệm',
+            label: l10n.addMemory,
             onTap: () => context.push('/diary/new'),
             gradient: AppColors.primaryGradient,
           ),
@@ -399,7 +403,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         Expanded(
           child: _QuickActionButton(
             icon: Icons.celebration_outlined,
-            label: 'Thêm ngày kỷ niệm',
+            label: l10n.addMilestone,
             onTap: () => context.push('/milestone/new'),
             gradient: const [Color(0xFFC04FD6), Color(0xFF7B2FBE)],
           ),
@@ -408,12 +412,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildUpcomingMilestone(BuildContext context, AppProvider provider) {
+  Widget _buildUpcomingMilestone(BuildContext context, AppProvider provider, AppLocalizations l10n) {
     final upcoming = provider.upcomingMilestones;
     if (upcoming.isEmpty) return const SizedBox.shrink();
 
     final next = upcoming.first;
     final daysLeft = DateHelper.daysUntil(next.date);
+
+    // Get localized title for auto-generated milestones
+    String displayTitle = next.title;
+    if (next.isAutoGenerated) {
+      final daysMatch = RegExp(r'auto_(\d+)').firstMatch(next.id);
+      if (daysMatch != null) {
+        final days = int.parse(daysMatch.group(1)!);
+        if (days >= 365) {
+          displayTitle = l10n.milestoneYearsTogether(days ~/ 365);
+        } else {
+          displayTitle = l10n.milestoneDaysTogether(days);
+        }
+      }
+    }
 
     return GlassCard(
       child: Row(
@@ -421,7 +439,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.secondary.withOpacity(0.15),
+              color: AppColors.secondary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Text(next.icon, style: const TextStyle(fontSize: 28)),
@@ -432,16 +450,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Sắp tới',
+                  l10n.upcoming,
                   style: TextStyle(
-                    color: AppColors.secondary.withOpacity(0.8),
+                    color: AppColors.secondary.withValues(alpha: 0.8),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  next.title,
+                  displayTitle,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 15,
@@ -452,12 +470,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
                 Text(
                   daysLeft == 0
-                      ? 'Hôm nay! 🎉'
+                      ? l10n.today
                       : daysLeft == 1
-                          ? 'Ngày mai!'
-                          : 'Còn $daysLeft ngày',
+                          ? l10n.tomorrow
+                          : l10n.daysLeft(daysLeft),
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                     fontSize: 13,
                   ),
                 ),
@@ -499,7 +517,7 @@ class _QuickActionButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: gradient.first.withOpacity(0.3),
+              color: gradient.first.withValues(alpha: 0.3),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),

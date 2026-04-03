@@ -1,0 +1,143 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+
+class AuthService {
+  FirebaseAuth get _auth => FirebaseAuth.instance;
+  GoogleSignIn get _googleSignIn => GoogleSignIn(
+    clientId: defaultTargetPlatform == TargetPlatform.iOS 
+      ? '60683918105-erapd2ob9mkc9h8qohj22ns5f92s9qa7.apps.googleusercontent.com' 
+      : null,
+  );
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+
+  User? get currentUser {
+    try {
+      return _auth.currentUser;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Stream<User?> get authStateChanges {
+    try {
+      return _auth.authStateChanges();
+    } catch (_) {
+      return const Stream.empty();
+    }
+  }
+
+  Future<UserCredential?> signInWithGoogle() async {
+    try {
+      // Trigger the authentication flow
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return null; // User canceled
+
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // Create a new credential
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // Once signed in, return the UserCredential
+      final userCredential = await _auth.signInWithCredential(credential);
+      
+      // Save user to Firestore
+      await _saveUserToFirestore(userCredential.user);
+      
+      return userCredential;
+    } catch (e) {
+      print('Google sign in error: $e');
+      return null;
+    }
+  }
+
+  Future<void> signOut() async {
+    await _googleSignIn.signOut();
+    await _auth.signOut();
+  }
+
+  Future<String?> getUserInviteCode(String uid) async {
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+      return doc.data()?['inviteCode'] as String?;
+    } catch (e) {
+      if (kDebugMode) print('getUserInviteCode error: $e');
+      return null;
+    }
+  }
+
+  Future<bool> pairWithPartner(String partnerCode) async {
+    final user = currentUser;
+    if (user == null) return false;
+
+    try {
+      // Find partner by invite code
+      final query = await _firestore
+          .collection('users')
+          .where('inviteCode', isEqualTo: partnerCode)
+          .limit(1)
+          .get();
+
+      if (query.docs.isEmpty) return false;
+
+      final partnerDoc = query.docs.first;
+      final partnerId = partnerDoc.id;
+
+      if (partnerId == user.uid) return false;
+
+      // Create a unique coupleId
+      final coupleId = '${user.uid}_$partnerId';
+
+      // Update both users
+      final batch = _firestore.batch();
+      batch.update(_firestore.collection('users').doc(user.uid), {
+        'partnerId': partnerId,
+        'coupleId': coupleId,
+      });
+      batch.update(_firestore.collection('users').doc(partnerId), {
+        'partnerId': user.uid,
+        'coupleId': coupleId,
+      });
+
+      // Initialize couple document
+      batch.set(_firestore.collection('couples').doc(coupleId), {
+        'uids': [user.uid, partnerId],
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      await batch.commit();
+      return true;
+    } catch (e) {
+      if (kDebugMode) print('pairWithPartner error: $e');
+      return false;
+    }
+  }
+
+  Future<void> _saveUserToFirestore(User? user) async {
+    if (user == null) return;
+    
+    final userRef = _firestore.collection('users').doc(user.uid);
+    final snapshot = await userRef.get();
+    
+    if (!snapshot.exists) {
+      // Create new user profile with a unique 6-character invite code
+      final inviteCode = DateTime.now().millisecondsSinceEpoch.toRadixString(36).toUpperCase().substring(0, 6);
+      
+      await userRef.set({
+        'uid': user.uid,
+        'displayName': user.displayName ?? 'Người dùng',
+        'email': user.email,
+        'photoUrl': user.photoURL,
+        'inviteCode': inviteCode,
+        'partnerId': null,
+        'coupleId': null,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+}

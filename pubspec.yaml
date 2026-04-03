@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   cupertino_icons: ^1.0.8
 
@@ -43,7 +45,7 @@ dependencies:
   share_plus: ^10.1.4
 
   # Date formatting
-  intl: ^0.19.0
+  intl: ^0.20.2
 
   # Path provider
   path_provider: ^2.1.5
@@ -116,17 +118,18 @@ flutter_launcher_icons:
 
 flutter_native_splash:
   color: "#0F0518"
-  image: "assets/images/splash_logo.png"
+  image: "assets/icons/app_icon.png"
   color_dark: "#0F0518"
   android: true
   ios: true
   android_12:
-    image: "assets/images/splash_logo.png"
+    image: "assets/icons/app_icon.png"
     color: "#0F0518"
     icon_background_color: "#0F0518"
 
 flutter:
   uses-material-design: true
+  generate: true
 
   assets:
     - assets/images/

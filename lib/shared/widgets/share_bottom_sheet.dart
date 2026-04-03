@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:date_luv/l10n/generated/app_localizations.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/services/screenshot_service.dart';
+import '../../core/theme/app_theme.dart';
 import './share_card_widget.dart';
 import '../../data/models/couple_profile.dart';
 
@@ -19,6 +21,7 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
   bool _isSharing = false;
 
   Future<void> _share() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isSharing = true);
     try {
       final card = ShareCardWidget(
@@ -28,11 +31,17 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
       );
       
       final file = await ScreenshotService().captureAndSave(card);
-      await Share.shareXFiles([XFile(file.path)], text: 'Kỷ niệm tình yêu của chúng mình ❤️');
+      await Share.shareXFiles(
+        [XFile(file.path)], 
+        text: l10n.shareMessage(widget.daysTogether)
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi khi chia sẻ: $e')),
+          SnackBar(
+            content: Text(l10n.shareError(e.toString())),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } finally {
@@ -42,47 +51,118 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
       decoration: const BoxDecoration(
-        color: Color(0xFF1A0A14),
+        color: AppColors.darkSurface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Chọn mẫu thiệp', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-          const SizedBox(height: 24),
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 24),
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Text(
+            l10n.shareMemories,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.shareDescription,
+            style: const TextStyle(fontSize: 14, color: AppColors.textMuted),
+          ),
+          const SizedBox(height: 32),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: ShareTemplate.values.map((t) => GestureDetector(
-              onTap: () => setState(() => _selectedTemplate = t),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: _selectedTemplate == t ? Colors.pink : Colors.white24),
-                  borderRadius: BorderRadius.circular(12),
+            children: ShareTemplate.values.map((t) => Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedTemplate = t),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    gradient: _selectedTemplate == t ? const LinearGradient(colors: AppColors.primaryGradient) : null,
+                    color: _selectedTemplate == t ? null : AppColors.darkCard,
+                    border: Border.all(
+                      color: _selectedTemplate == t ? Colors.white30 : AppColors.darkBorder,
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: _selectedTemplate == t ? [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      )
+                    ] : null,
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        t == ShareTemplate.classic ? Icons.dashboard_outlined :
+                        t == ShareTemplate.sideBySide ? Icons.view_column_outlined : Icons.portrait_outlined,
+                        color: _selectedTemplate == t ? Colors.white : AppColors.textMuted,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _getTemplateName(t),
+                        style: TextStyle(
+                          color: _selectedTemplate == t ? Colors.white : AppColors.textMuted,
+                          fontWeight: _selectedTemplate == t ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Text(t.name.toUpperCase(), style: const TextStyle(color: Colors.white)),
               ),
             )).toList(),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 40),
           SizedBox(
             width: double.infinity,
-            height: 56,
+            height: 60,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pink,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+                shadowColor: Colors.transparent,
               ),
               onPressed: _isSharing ? null : _share,
-              child: Text(_isSharing ? 'Đang tạo...' : 'Chia sẻ ngay'),
+              child: _isSharing 
+                ? const SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.ios_share, size: 20),
+                      const SizedBox(width: 12),
+                      Text(l10n.createAndShare, style: const TextStyle(letterSpacing: 0.5)),
+                    ],
+                  ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _getTemplateName(ShareTemplate t) {
+    switch (t) {
+      case ShareTemplate.classic: return 'Cổ điển';
+      case ShareTemplate.sideBySide: return 'Đôi lứa';
+      case ShareTemplate.poster: return 'Poster';
+    }
   }
 }
