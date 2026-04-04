@@ -3,20 +3,24 @@ import 'package:flutter/material.dart';
 import 'package:date_luv/l10n/generated/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/date_helper.dart';
 import '../../data/models/couple_profile.dart';
+import '../../data/models/diary_entry.dart';
 
-enum ShareTemplate { classic, sideBySide, poster }
+enum ShareTemplate { classic, sideBySide, poster, memory }
 
 class ShareCardWidget extends StatelessWidget {
   final CoupleProfile profile;
   final ShareTemplate template;
   final int daysTogether;
+  final DiaryEntry? entry;
 
   const ShareCardWidget({
     super.key,
     required this.profile,
     required this.template,
     required this.daysTogether,
+    this.entry,
   });
 
   @override
@@ -58,7 +62,10 @@ class ShareCardWidget extends StatelessWidget {
         return _buildSideBySide(l10n);
       case ShareTemplate.poster:
         return _buildPoster(l10n);
+      case ShareTemplate.memory:
+        return _buildMemory(l10n);
       case ShareTemplate.classic:
+      default:
         return _buildClassic(l10n);
     }
   }
@@ -198,6 +205,71 @@ class ShareCardWidget extends StatelessWidget {
          ),
        ],
      );
+  }
+
+  Widget _buildMemory(AppLocalizations l10n) {
+    if (entry == null) return _buildClassic(l10n);
+    
+    return Padding(
+      padding: const EdgeInsets.all(30),
+      child: Column(
+        children: [
+          const SizedBox(height: 40),
+          if (entry!.imagePaths.isNotEmpty)
+             ClipRRect(
+               borderRadius: BorderRadius.circular(20),
+               child: Image.file(
+                 File(entry!.imagePaths.first), 
+                 height: 300, 
+                 width: double.infinity, 
+                 fit: BoxFit.cover
+               ),
+             ),
+          const SizedBox(height: 30),
+          Text(entry!.emoji, style: const TextStyle(fontSize: 44)),
+          const SizedBox(height: 12),
+          Text(
+            entry!.title, 
+            textAlign: TextAlign.center,
+            style: GoogleFonts.nunito(
+              fontSize: 28, 
+              fontWeight: FontWeight.w900, 
+              color: Colors.white,
+              height: 1.2
+            )
+          ),
+          const SizedBox(height: 16),
+          Text(
+            entry!.content, 
+            textAlign: TextAlign.center, 
+            style: GoogleFonts.nunito(
+              color: Colors.white.withValues(alpha: 0.7), 
+              fontSize: 16,
+              height: 1.5
+            ),
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              DateHelper.formatDate(entry!.date, l10n.localeName), 
+              style: const TextStyle(
+                color: AppColors.primary, 
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1
+              )
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _avatar(String? path, {double size = 80}) {

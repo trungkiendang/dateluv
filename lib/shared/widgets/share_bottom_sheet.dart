@@ -5,20 +5,33 @@ import '../../core/services/screenshot_service.dart';
 import '../../core/theme/app_theme.dart';
 import './share_card_widget.dart';
 import '../../data/models/couple_profile.dart';
+import '../../data/models/diary_entry.dart';
 
 class ShareBottomSheet extends StatefulWidget {
   final CoupleProfile profile;
   final int daysTogether;
+  final DiaryEntry? entry;
 
-  const ShareBottomSheet({super.key, required this.profile, required this.daysTogether});
+  const ShareBottomSheet({
+    super.key, 
+    required this.profile, 
+    required this.daysTogether,
+    this.entry,
+  });
 
   @override
   State<ShareBottomSheet> createState() => _ShareBottomSheetState();
 }
 
 class _ShareBottomSheetState extends State<ShareBottomSheet> {
-  ShareTemplate _selectedTemplate = ShareTemplate.classic;
+  late ShareTemplate _selectedTemplate;
   bool _isSharing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTemplate = widget.entry != null ? ShareTemplate.memory : ShareTemplate.classic;
+  }
 
   Future<void> _share() async {
     final l10n = AppLocalizations.of(context)!;
@@ -28,12 +41,19 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
         profile: widget.profile,
         template: _selectedTemplate,
         daysTogether: widget.daysTogether,
+        entry: widget.entry,
       );
       
       final file = await ScreenshotService().captureAndSave(card);
+      
+      String shareText = l10n.shareMessage(widget.daysTogether);
+      if (widget.entry != null && _selectedTemplate == ShareTemplate.memory) {
+        shareText = '${widget.entry!.title} ❤️ #DateLuv';
+      }
+
       await Share.shareXFiles(
         [XFile(file.path)], 
-        text: l10n.shareMessage(widget.daysTogether)
+        text: shareText
       );
     } catch (e) {
       if (mounted) {
@@ -52,6 +72,9 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final templates = widget.entry != null 
+        ? ShareTemplate.values 
+        : ShareTemplate.values.where((t) => t != ShareTemplate.memory).toList();
 
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
@@ -82,7 +105,7 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
           ),
           const SizedBox(height: 32),
           Row(
-            children: ShareTemplate.values.map((t) => Expanded(
+            children: templates.map((t) => Expanded(
               child: GestureDetector(
                 onTap: () => setState(() => _selectedTemplate = t),
                 child: AnimatedContainer(
@@ -109,7 +132,8 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
                     children: [
                       Icon(
                         t == ShareTemplate.classic ? Icons.dashboard_outlined :
-                        t == ShareTemplate.sideBySide ? Icons.view_column_outlined : Icons.portrait_outlined,
+                        t == ShareTemplate.sideBySide ? Icons.view_column_outlined : 
+                        t == ShareTemplate.poster ? Icons.portrait_outlined : Icons.auto_awesome_outlined,
                         color: _selectedTemplate == t ? Colors.white : AppColors.textMuted,
                       ),
                       const SizedBox(height: 8),
@@ -118,7 +142,7 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
                         style: TextStyle(
                           color: _selectedTemplate == t ? Colors.white : AppColors.textMuted,
                           fontWeight: _selectedTemplate == t ? FontWeight.bold : FontWeight.normal,
-                          fontSize: 13,
+                          fontSize: 12,
                         ),
                       ),
                     ],
@@ -163,6 +187,7 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
       case ShareTemplate.classic: return 'Cổ điển';
       case ShareTemplate.sideBySide: return 'Đôi lứa';
       case ShareTemplate.poster: return 'Poster';
+      case ShareTemplate.memory: return 'Kỷ niệm';
     }
   }
 }

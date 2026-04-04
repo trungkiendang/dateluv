@@ -8,6 +8,7 @@ import '../../core/utils/date_helper.dart';
 import '../../data/models/diary_entry.dart';
 import '../../data/repositories/app_provider.dart';
 import '../../shared/widgets/common_widgets.dart';
+import '../../shared/widgets/share_bottom_sheet.dart';
 
 class DiaryScreen extends StatefulWidget {
   const DiaryScreen({super.key});
@@ -314,6 +315,32 @@ class _DiaryCard extends StatelessWidget {
                     ),
                   ),
                   const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 20),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () {
+                      final provider = context.read<AppProvider>();
+                      if (provider.hasProfile) {
+                        showModalBottomSheet(
+                          context: context,
+                          backgroundColor: Colors.transparent,
+                          isScrollControlled: true,
+                          builder: (context) => ShareBottomSheet(
+                            profile: provider.coupleProfile!,
+                            daysTogether: DateTime.now().difference(provider.coupleProfile!.startDate).inDays,
+                            entry: entry,
+                          ),
+                        );
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.share_outlined, color: AppColors.textMuted, size: 18),
+                    ),
+                  ),
                 ],
               ),
               if (entry.content.isNotEmpty) ...[
