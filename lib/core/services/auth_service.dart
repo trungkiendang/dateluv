@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:math';
 
 class AuthService {
   FirebaseAuth get _auth => FirebaseAuth.instance;
@@ -46,12 +47,20 @@ class AuthService {
       // Once signed in, return the UserCredential
       final userCredential = await _auth.signInWithCredential(credential);
       
-      // Save user to Firestore
-      await _saveUserToFirestore(userCredential.user);
+      // Save user to Firestore (non-critical, don't fail sign in if this fails)
+      try {
+        await _saveUserToFirestore(userCredential.user).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => throw Exception('Firestore timeout'),
+        );
+      } catch (e) {
+        if (kDebugMode) print('APP_LOG: Firestore metadata update skipped/failed: $e');
+        // We continue because authentication actually succeeded
+      }
       
       return userCredential;
     } catch (e) {
-      print('Google sign in error: $e');
+      if (kDebugMode) print('Google sign in error: $e');
       return null;
     }
   }
@@ -124,9 +133,14 @@ class AuthService {
     final userRef = _firestore.collection('users').doc(user.uid);
     final snapshot = await userRef.get();
     
-    if (!snapshot.exists) {
-      // Create new user profile with a unique 6-character invite code
-      final inviteCode = DateTime.now().millisecondsSinceEpoch.toRadixString(36).toUpperCase().substring(0, 6);
+    // Generate a unique 6-character invite code if doesn't exist
+    String? existingCode;
+    if (snapshot.exists) {
+      existingCode = snapshot.data()?['inviteCode'] as String?;
+    }
+
+    if (existingCode == null || existingCode.isEmpty) {
+      final inviteCode = _generateRandomCode(6);
       
       await userRef.set({
         'uid': user.uid,
@@ -134,10 +148,26 @@ class AuthService {
         'email': user.email,
         'photoUrl': user.photoURL,
         'inviteCode': inviteCode,
-        'partnerId': null,
-        'coupleId': null,
-        'createdAt': FieldValue.serverTimestamp(),
+        'partnerId': snapshot.data()?['partnerId'],
+        'coupleId': snapshot.data()?['coupleId'],
+        'createdAt': snapshot.data()?['createdAt'] ?? FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } else {
+      // Just update basic info if doc exists and has code
+      await userRef.update({
+        'displayName': user.displayName ?? 'Người dùng',
+        'photoUrl': user.photoURL,
+        'updatedAt': FieldValue.serverTimestamp(),
       });
     }
+  }
+
+  String _generateRandomCode(int length) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    final random = Random();
+    return String.fromCharCodes(Iterable.generate(
+      length, (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+    ));
   }
 }

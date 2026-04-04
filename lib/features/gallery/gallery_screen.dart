@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'dart:io';
 import '../../core/theme/app_theme.dart';
 import '../../data/repositories/app_provider.dart';
-import '../../shared/widgets/common_widgets.dart';
 
 class GalleryScreen extends StatefulWidget {
   const GalleryScreen({super.key});
@@ -51,6 +50,25 @@ class _GalleryScreenState extends State<GalleryScreen> {
                           color: Colors.white,
                         ),
                       ),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () => context.push('/diary/new'),
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(colors: AppColors.primaryGradient),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.add_a_photo_outlined, color: Colors.white, size: 22),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -70,7 +88,10 @@ class _GalleryScreenState extends State<GalleryScreen> {
                               path: photos[index],
                               index: index,
                               onTap: () {
-                                // Full screen view logic could be added here
+                                context.push('/photo-viewer', extra: {
+                                  'imagePaths': photos,
+                                  'initialIndex': index,
+                                });
                               },
                             );
                           },
@@ -133,7 +154,7 @@ class _PhotoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Hero(
-      tag: 'gallery_photo_$index',
+      tag: 'photo_$index',
       child: GestureDetector(
         onTap: onTap,
         child: ClipRRect(

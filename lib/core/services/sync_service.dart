@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'dart:math';
 import '../../data/models/couple_profile.dart';
 import '../../data/models/diary_entry.dart';
 import '../../data/models/milestone.dart';
+import '../constants/app_constants.dart';
 import 'storage_service.dart';
 
 class SyncService {
@@ -24,7 +27,10 @@ class SyncService {
     final uid = currentUid;
     if (uid == null) return null;
     try {
-      final doc = await _firestore.collection('users').doc(uid).get();
+      // Try cache first if possible, or use a very short timeout for server
+      final doc = await _firestore.collection('users').doc(uid).get(
+        const GetOptions(source: Source.serverAndCache)
+      );
       return doc.data()?['coupleId'] as String?;
     } catch (e) {
       if (kDebugMode) print('SyncService getCoupleId error: $e');
@@ -34,9 +40,103 @@ class SyncService {
 
   /// Get current user's invite code
   Future<String?> getInviteCode() async {
-    if (currentUid == null) return null;
-    final doc = await _firestore.collection('users').doc(currentUid).get();
-    return doc.data()?['inviteCode'] as String?;
+    final uid = currentUid;
+    if (uid == null) return null;
+
+    // Check local Hive cache first for immediate display
+    final settingsBox = Hive.box(AppConstants.hiveBoxSettings);
+    String? cachedCode = settingsBox.get('cached_invite_code');
+    
+    try {
+      // Try to fetch fresh from server but don't hang
+      final doc = await _firestore.collection('users').doc(uid).get(
+        const GetOptions(source: Source.serverAndCache)
+      ).timeout(const Duration(seconds: 3));
+      
+      String? code = doc.data()?['inviteCode'] as String?;
+      
+      if (code == null || code.isEmpty) {
+        code = await ensureInviteCode();
+      }
+
+      if (code != null) {
+        await settingsBox.put('cached_invite_code', code);
+      }
+      
+      return code;
+    } catch (e) {
+      if (kDebugMode) print('SyncService getInviteCode error (using cache if available): $e');
+      
+      // If server is unavailable, use cache or generate a "temporary" one if we have never had one
+      if (cachedCode != null) return cachedCode;
+      
+      // Fallback: Ensure we have SOMETHING to show
+      return await ensureInviteCode();
+    }
+  }
+
+  /// Đảm bảo người dùng có mã mời trong Firestore
+  Future<String?> ensureInviteCode() async {
+    final uid = currentUid;
+    if (uid == null) return null;
+    
+    final settingsBox = Hive.box(AppConstants.hiveBoxSettings);
+    
+    try {
+      final user = _auth.currentUser;
+      final userRef = _firestore.collection('users').doc(uid);
+      
+      // Try to get existing code first
+      final doc = await userRef.get(const GetOptions(source: Source.serverAndCache));
+      
+      String? code = doc.exists ? (doc.data()?['inviteCode'] as String?) : null;
+      if (code != null && code.isNotEmpty) {
+        await settingsBox.put('cached_invite_code', code);
+        return code;
+      }
+      
+      // Generate new code
+      final newCode = _generateRandomCode(6);
+      
+      // Background push - don't let the whole app wait for this if Firestore is "unavailable"
+      _pushInviteCodeInBackground(uid, newCode, user, doc.exists);
+      
+      // Save to cache immediately
+      await settingsBox.put('cached_invite_code', newCode);
+      
+      return newCode;
+    } catch (e) {
+      if (kDebugMode) print('SyncService ensureInviteCode error: $e');
+      
+      // Ultimate fallback: generate a code and cache it locally, hope to sync later
+      final fallbackCode = _generateRandomCode(6);
+      await settingsBox.put('cached_invite_code', fallbackCode);
+      return fallbackCode;
+    }
+  }
+
+  void _pushInviteCodeInBackground(String uid, String code, User? user, bool exists) async {
+    try {
+      final userRef = _firestore.collection('users').doc(uid);
+      await userRef.set({
+        'uid': uid,
+        'email': user?.email,
+        'displayName': user?.displayName ?? 'Người dùng',
+        'photoUrl': user?.photoURL,
+        'inviteCode': code,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true)).timeout(const Duration(seconds: 10));
+    } catch (e) {
+      if (kDebugMode) print('APP_LOG: Background invite code sync failed: $e');
+    }
+  }
+
+  String _generateRandomCode(int length) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    final random = Random();
+    return String.fromCharCodes(Iterable.generate(
+      length, (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+    ));
   }
 
   /// Link couple using invite code
@@ -63,7 +163,10 @@ class SyncService {
     batch.set(coupleRef, {
       'members': [currentUid, partnerId],
       'createdAt': FieldValue.serverTimestamp(),
-      'startDate': FieldValue.serverTimestamp(), // Default, can be changed later
+      'startDate': FieldValue.serverTimestamp(),
+      'person1Name': 'Người ấy 1',
+      'person2Name': 'Người ấy 2',
+      'isDarkMode': true,
     });
 
     // Update both users

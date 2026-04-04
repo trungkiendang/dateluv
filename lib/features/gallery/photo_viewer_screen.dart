@@ -40,10 +40,21 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
 
   Future<void> _sharePhoto() async {
     final path = widget.imagePaths[_currentIndex];
+    final box = context.findRenderObject() as RenderBox?;
+    final rect = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+
     if (path.startsWith('http')) {
-      await Share.share(path, subject: 'Date Luv - Kỷ niệm đẹp của chúng tôi 💕');
+      await Share.share(
+        path, 
+        subject: 'Date Luv - Kỷ niệm đẹp của chúng tôi 💕',
+        sharePositionOrigin: rect,
+      );
     } else {
-      await Share.shareXFiles([XFile(path)], text: 'Date Luv - Kỷ niệm đẹp của chúng tôi 💕');
+      await Share.shareXFiles(
+        [XFile(path)], 
+        text: 'Date Luv - Kỷ niệm đẹp của chúng tôi 💕',
+        sharePositionOrigin: rect,
+      );
     }
   }
 

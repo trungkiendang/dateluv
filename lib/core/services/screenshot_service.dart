@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:date_luv/l10n/generated/app_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import '../theme/app_theme.dart';
@@ -12,7 +14,7 @@ class ScreenshotService {
 
   final ScreenshotController screenshotController = ScreenshotController();
 
-  Future<File> captureAndSave(Widget widget) async {
+  Future<File> captureAndSave(Widget widget, {Locale? locale, bool isDarkMode = true}) async {
     // Wrap widget with complete context using standard logical sizes (360x640)
     final wrappedWidget = MediaQuery(
       data: const MediaQueryData(
@@ -20,13 +22,24 @@ class ScreenshotService {
         padding: EdgeInsets.zero,
         viewPadding: EdgeInsets.zero,
         viewInsets: EdgeInsets.zero,
-        devicePixelRatio: 4.0, // Result will be 1440x2560
+        devicePixelRatio: 3.0, 
       ),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
+        theme: isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme,
+        locale: locale ?? const Locale('vi'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('vi'),
+          Locale('en'),
+        ],
         home: Scaffold(
-          backgroundColor: AppColors.darkSurface,
+          backgroundColor: isDarkMode ? AppColors.darkSurface : Colors.white,
           body: widget,
         ),
       ),
@@ -36,8 +49,7 @@ class ScreenshotService {
     final Uint8List? imageBytes = await screenshotController.captureFromWidget(
       wrappedWidget,
       delay: const Duration(seconds: 1), // 1 second to ensure high-quality rendering
-      pixelRatio: 4.0,
-      context: null, // Avoid using the current context which might not be ready
+      pixelRatio: 3.0, // Enough for high quality without being overly huge
     );
 
     if (imageBytes == null) throw Exception('Không thể tạo ảnh chụp màn hình');

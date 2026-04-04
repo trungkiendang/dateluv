@@ -16,60 +16,80 @@ void main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
-  print('APP_LOG: Starting main()...');
+  try {
+    print('APP_LOG: Starting initialization...');
 
-  // Hệ thống thanh trạng thái trong suốt
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ),
-  );
+    // Hệ thống thanh trạng thái trong suốt
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
+    );
 
-  print('APP_LOG: Initializing Notifications...');
-  // Initialize notifications
-  await NotificationService().init();
+    // 1. Initialize Firebase FIRST and alone
+    print('APP_LOG: Initializing Firebase...');
+    await FirebaseService.init();
 
-  print('APP_LOG: Initializing Firebase...');
-  // Initialize Firebase
-  await FirebaseService.init();
+    // 2. Initialize other services in parallel
+    print('APP_LOG: Initializing other services...');
+    await Future.wait([
+      _safeInit('Notifications', () => NotificationService().init()),
+      _safeInit('Hive', () async {
+        await Hive.initFlutter();
+        Hive.registerAdapter(CoupleProfileAdapter());
+        Hive.registerAdapter(DiaryEntryAdapter());
+        Hive.registerAdapter(MilestoneAdapter());
+        
+        await Hive.openBox<CoupleProfile>(AppConstants.hiveBoxCouple);
+        await Hive.openBox<DiaryEntry>(AppConstants.hiveBoxDiary);
+        await Hive.openBox<Milestone>(AppConstants.hiveBoxMilestones);
+        await Hive.openBox(AppConstants.hiveBoxSettings);
+      }),
+    ]);
 
-  print('APP_LOG: Setting Orientations...');
-  // Khóa hướng màn hình (portrait only)
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+    // Khóa hướng màn hình
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
 
-  print('APP_LOG: Initializing Hive...');
-  // Khởi tạo Hive
-  await Hive.initFlutter();
+    print('APP_LOG: Initializing AppProvider...');
+    final appProvider = AppProvider();
+    await appProvider.init().timeout(
+      const Duration(seconds: 10),
+      onTimeout: () => print('APP_LOG: AppProvider init timed out, continuing...'),
+    );
 
-  // Đăng ký adapters
-  Hive.registerAdapter(CoupleProfileAdapter());
-  Hive.registerAdapter(DiaryEntryAdapter());
-  Hive.registerAdapter(MilestoneAdapter());
+    print('APP_LOG: Running App...');
+    runApp(
+      ChangeNotifierProvider.value(
+        value: appProvider,
+        child: const DateLuvApp(),
+      ),
+    );
+  } catch (e, stack) {
+    print('APP_LOG: CRITICAL ERROR DURING INIT: $e');
+    print(stack);
+    
+    // Fallback: Run app even if init failed partially
+    runApp(
+      ChangeNotifierProvider(
+        create: (_) => AppProvider()..init(),
+        child: const DateLuvApp(),
+      ),
+    );
+  } finally {
+    print('APP_LOG: Removing Splash Screen...');
+    FlutterNativeSplash.remove();
+  }
+}
 
-  print('APP_LOG: Opening Hive boxes...');
-  // Mở các boxes
-  await Hive.openBox<CoupleProfile>(AppConstants.hiveBoxCouple);
-  await Hive.openBox<DiaryEntry>(AppConstants.hiveBoxDiary);
-  await Hive.openBox<Milestone>(AppConstants.hiveBoxMilestones);
-  await Hive.openBox(AppConstants.hiveBoxSettings);
-
-  print('APP_LOG: Initializing AppProvider...');
-  // Tạo provider và init
-  final appProvider = AppProvider();
-  await appProvider.init();
-
-  print('APP_LOG: Running App...');
-  runApp(
-    ChangeNotifierProvider.value(
-      value: appProvider,
-      child: const DateLuvApp(),
-    ),
-  );
-
-  print('APP_LOG: Removing Splash Screen...');
-  FlutterNativeSplash.remove();
+Future<void> _safeInit(String name, Future<void> Function() initFunc) async {
+  try {
+    print('APP_LOG: Initializing $name...');
+    await initFunc();
+  } catch (e) {
+    print('APP_LOG: Error initializing $name: $e');
+  }
 }

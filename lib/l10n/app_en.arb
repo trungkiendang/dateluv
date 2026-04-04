@@ -179,5 +179,19 @@
         "type": "int"
       }
     }
-  }
+  },
+  "cloudSync": "Cloud Sync",
+  "syncEnabled": "Sync enabled",
+  "syncDisabled": "Sync disabled",
+  "loginToSync": "Login to sync",
+  "logout": "Logout",
+  "loggedInAs": "Logged in as: {email}",
+  "@loggedInAs": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "notConnected": "Not connected with partner"
 }

@@ -179,5 +179,19 @@
         "type": "int"
       }
     }
-  }
+  },
+  "cloudSync": "Đồng bộ đám mây",
+  "syncEnabled": "Đã bật đồng bộ",
+  "syncDisabled": "Chưa bật đồng bộ",
+  "loginToSync": "Đăng nhập để đồng bộ",
+  "logout": "Đăng xuất",
+  "loggedInAs": "Đăng nhập: {email}",
+  "@loggedInAs": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "notConnected": "Chưa kết nối với đối phương"
 }

@@ -8,7 +8,6 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/date_helper.dart';
 import '../../data/models/diary_entry.dart';
 import '../../data/repositories/app_provider.dart';
-import '../../shared/widgets/common_widgets.dart';
 
 class DiaryFormScreen extends StatefulWidget {
   final DiaryEntry? entry;

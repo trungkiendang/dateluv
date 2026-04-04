@@ -22,29 +22,34 @@ class AppRouter {
           isLoggedIn = FirebaseAuth.instance.currentUser != null;
         } catch (_) {}
         
-        final isLoginRoute = state.matchedLocation == '/login';
-        final isOnboardingRoute = state.matchedLocation == '/onboarding';
-        final isPairingRoute = state.matchedLocation == '/pairing';
+        final path = state.matchedLocation;
+        final isLoginRoute = path == '/login';
+        final isOnboardingRoute = path == '/onboarding';
+        final isPairingRoute = path == '/pairing';
         final hasProfile = provider.hasProfile;
 
-        // 1. Nếu chưa có hồ sơ và chưa đăng nhập: 
-        // Chỉ cho phép ở Login hoặc Onboarding
-        if (!hasProfile && !isLoggedIn) {
-          if (!isLoginRoute && !isOnboardingRoute) {
-            return '/login';
+        // 1. Nếu chưa đăng nhập:
+        // Chỉ cho phép ở /login hoặc /onboarding (để tạo profile offline)
+        if (!isLoggedIn) {
+          // Nếu đang ở /pairing (yêu cầu login), đá về /login
+          if (isPairingRoute) return '/login';
+          
+          // Nếu đã có profile (đang dùng offline) và cố vào /login hoặc /onboarding:
+          // Cho phép để họ có thể đăng nhập hoặc xem onboarding
+          return null; 
+        }
+
+        // 2. Nếu ĐÃ đăng nhập:
+        // - Nếu chưa có profile: Bắt buộc vào /onboarding hoặc /pairing
+        if (!hasProfile) {
+          if (!isOnboardingRoute && !isPairingRoute) {
+            return '/onboarding';
           }
           return null;
         }
-
-        // 2. Nếu đã đăng nhập nhưng chưa có hồ sơ:
-        // Ép vào Onboarding hoặc Pairing
-        if (isLoggedIn && !hasProfile && !isOnboardingRoute && !isPairingRoute) {
-          return '/onboarding';
-        }
         
-        // 3. Nếu đã có hồ sơ:
-        // Tránh quay lại Login hoặc Onboarding
-        if (hasProfile && (isLoginRoute || isOnboardingRoute)) {
+        // - Nếu đã có profile: Tránh quay lại /login hoặc /onboarding (đã xong rồi)
+        if (isLoginRoute || isOnboardingRoute) {
           return '/';
         }
         

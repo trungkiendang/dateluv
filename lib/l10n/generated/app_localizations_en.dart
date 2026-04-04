@@ -361,4 +361,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String daysAgoLabel(int count) {
     return '$count days ago';
   }
+
+  @override
+  String get cloudSync => 'Cloud Sync';
+
+  @override
+  String get syncEnabled => 'Sync enabled';
+
+  @override
+  String get syncDisabled => 'Sync disabled';
+
+  @override
+  String get loginToSync => 'Login to sync';
+
+  @override
+  String get logout => 'Logout';
+
+  @override
+  String loggedInAs(String email) {
+    return 'Logged in as: $email';
+  }
+
+  @override
+  String get notConnected => 'Not connected with partner';
 }

@@ -35,6 +35,13 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
 
   Future<void> _share() async {
     final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final box = context.findRenderObject() as RenderBox?;
+    final sharePositionOrigin = box != null 
+        ? box.localToGlobal(Offset.zero) & box.size 
+        : null;
+    
     setState(() => _isSharing = true);
     try {
       final card = ShareCardWidget(
@@ -44,7 +51,11 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
         entry: widget.entry,
       );
       
-      final file = await ScreenshotService().captureAndSave(card);
+      final file = await ScreenshotService().captureAndSave(
+        card, 
+        locale: locale,
+        isDarkMode: isDark,
+      );
       
       String shareText = l10n.shareMessage(widget.daysTogether);
       if (widget.entry != null && _selectedTemplate == ShareTemplate.memory) {
@@ -53,7 +64,8 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
 
       await Share.shareXFiles(
         [XFile(file.path)], 
-        text: shareText
+        text: shareText,
+        sharePositionOrigin: sharePositionOrigin,
       );
     } catch (e) {
       if (mounted) {

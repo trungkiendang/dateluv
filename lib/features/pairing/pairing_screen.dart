@@ -6,6 +6,10 @@ import '../../core/services/auth_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/common_widgets.dart';
 
+import 'package:provider/provider.dart';
+import '../../core/services/sync_service.dart';
+import '../../data/repositories/app_provider.dart';
+
 class PairingScreen extends StatefulWidget {
   const PairingScreen({super.key});
 
@@ -15,22 +19,59 @@ class PairingScreen extends StatefulWidget {
 
 class _PairingScreenState extends State<PairingScreen> {
   final AuthService _authService = AuthService();
+  final SyncService _syncService = SyncService();
   final _codeController = TextEditingController();
   String? _myInviteCode;
   bool _isLoading = false;
+  bool _isCodeError = false;
 
   @override
   void initState() {
     super.initState();
+    _checkExistingPairing();
     _loadMyCode();
+  }
+
+  Future<void> _checkExistingPairing() async {
+    final coupleId = await _syncService.getCoupleId();
+    if (coupleId != null && mounted) {
+      context.read<AppProvider>().startSync(coupleId);
+      context.go('/');
+    }
   }
 
   Future<void> _loadMyCode() async {
     final user = _authService.currentUser;
-    if (user != null) {
-      final code = await _authService.getUserInviteCode(user.uid);
-      setState(() => _myInviteCode = code);
+    if (user == null) return;
+
+    if (mounted) setState(() => _isCodeError = false);
+
+    // Thử lấy mã 3 lần với khoảng nghỉ
+    for (int i = 0; i < 3; i++) {
+      final code = await _syncService.getInviteCode();
+      if (code != null && code.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _myInviteCode = code;
+            _isCodeError = false;
+          });
+        }
+        return;
+      }
+      if (mounted) await Future.delayed(const Duration(seconds: 2));
     }
+    
+    if (mounted && _myInviteCode == null) {
+      setState(() => _isCodeError = true);
+    }
+  }
+
+  void _retryLoadingCode() {
+    setState(() {
+      _myInviteCode = null;
+      _isCodeError = false;
+    });
+    _loadMyCode();
   }
 
   Future<void> _handlePairing() async {
@@ -53,11 +94,15 @@ class _PairingScreenState extends State<PairingScreen> {
 
     setState(() => _isLoading = true);
     
-    final success = await _authService.pairWithPartner(partnerCode);
+    final success = await _syncService.linkWithPartner(partnerCode);
     
     if (mounted) {
       setState(() => _isLoading = false);
       if (success) {
+        final coupleId = await _syncService.getCoupleId();
+        if (coupleId != null) {
+          context.read<AppProvider>().startSync(coupleId);
+        }
         context.go('/onboarding');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -113,7 +158,18 @@ class _PairingScreenState extends State<PairingScreen> {
                         style: const TextStyle(color: Colors.white70, fontSize: 14),
                       ),
                       const SizedBox(height: 12),
-                      if (_myInviteCode == null)
+                      if (_isCodeError)
+                        Column(
+                          children: [
+                            const Icon(Icons.error_outline, color: Colors.orangeAccent, size: 32),
+                            const SizedBox(height: 8),
+                            TextButton(
+                              onPressed: _retryLoadingCode,
+                              child: const Text('Thử lại', style: TextStyle(color: AppColors.primary)),
+                            ),
+                          ],
+                        )
+                      else if (_myInviteCode == null)
                         const CircularProgressIndicator(color: AppColors.primary)
                       else
                         Row(
@@ -170,6 +226,8 @@ class _PairingScreenState extends State<PairingScreen> {
                         controller: _codeController,
                         textAlign: TextAlign.center,
                         maxLength: 6,
+                        keyboardType: TextInputType.text,
+                        textCapitalization: TextCapitalization.characters,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 24,
@@ -178,7 +236,7 @@ class _PairingScreenState extends State<PairingScreen> {
                         ),
                         decoration: const InputDecoration(
                           counterText: '',
-                          hintText: '000000',
+                          hintText: 'ABCDEF',
                           hintStyle: TextStyle(color: Colors.white10),
                         ),
                         inputFormatters: [

@@ -3,6 +3,7 @@ import 'package:date_luv/l10n/generated/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/date_helper.dart';
@@ -84,7 +85,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Consumer<AppProvider>(
       builder: (context, provider, _) {
-        final profile = provider.coupleProfile!;
+        final profile = provider.coupleProfile;
+
+        if (profile == null) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
 
         return Scaffold(
           body: Container(
@@ -316,6 +325,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           const SizedBox(height: 24),
 
+                          // Cloud Sync
+                          _SectionHeader(title: l10n.cloudSync),
+                          _buildSyncSection(provider, l10n),
+                          const SizedBox(height: 24),
+
                           // About
                           _SectionHeader(title: l10n.about),
                           GlassCard(
@@ -341,6 +355,85 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSyncSection(AppProvider provider, AppLocalizations l10n) {
+    final user = FirebaseAuth.instance.currentUser;
+    final isSyncing = provider.isSyncEnabled;
+
+    return GlassCard(
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(
+                isSyncing ? Icons.cloud_done : Icons.cloud_off,
+                color: isSyncing ? Colors.greenAccent : AppColors.textMuted,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isSyncing ? l10n.syncEnabled : l10n.syncDisabled,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                    ),
+                    if (user != null)
+                      Text(
+                        l10n.loggedInAs(user.email ?? ''),
+                        style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                      ),
+                  ],
+                ),
+              ),
+              if (user != null)
+                TextButton(
+                  onPressed: () => provider.signOut(),
+                  child: Text(l10n.logout, style: const TextStyle(color: Colors.redAccent)),
+                )
+            ],
+          ),
+          if (user == null) ...[
+            const SizedBox(height: 16),
+            GradientButton(
+              onPressed: () => context.go('/login'),
+              height: 44,
+              text: l10n.loginGoogle,
+              icon: Icons.login,
+            ),
+          ],
+          if (user != null && !isSyncing) ...[
+            const Divider(color: AppColors.darkBorder, height: 24),
+            Row(
+              children: [
+                const Icon(Icons.link_off, color: Colors.orangeAccent),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.notConnected,
+                        style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+                      ),
+                      const Text(
+                        'Kết nối với đối phương để bắt đầu đồng bộ',
+                        style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => context.go('/pairing'),
+                  child: Text(l10n.connectNow),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 

@@ -65,7 +65,6 @@ class ShareCardWidget extends StatelessWidget {
       case ShareTemplate.memory:
         return _buildMemory(l10n);
       case ShareTemplate.classic:
-      default:
         return _buildClassic(l10n);
     }
   }

@@ -757,6 +757,48 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'{count} ngày trước'**
   String daysAgoLabel(int count);
+
+  /// No description provided for @cloudSync.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng bộ đám mây'**
+  String get cloudSync;
+
+  /// No description provided for @syncEnabled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã bật đồng bộ'**
+  String get syncEnabled;
+
+  /// No description provided for @syncDisabled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa bật đồng bộ'**
+  String get syncDisabled;
+
+  /// No description provided for @loginToSync.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng nhập để đồng bộ'**
+  String get loginToSync;
+
+  /// No description provided for @logout.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng xuất'**
+  String get logout;
+
+  /// No description provided for @loggedInAs.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng nhập: {email}'**
+  String loggedInAs(String email);
+
+  /// No description provided for @notConnected.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa kết nối với đối phương'**
+  String get notConnected;
 }
 
 class _AppLocalizationsDelegate

@@ -362,4 +362,27 @@ class AppLocalizationsVi extends AppLocalizations {
   String daysAgoLabel(int count) {
     return '$count ngày trước';
   }
+
+  @override
+  String get cloudSync => 'Đồng bộ đám mây';
+
+  @override
+  String get syncEnabled => 'Đã bật đồng bộ';
+
+  @override
+  String get syncDisabled => 'Chưa bật đồng bộ';
+
+  @override
+  String get loginToSync => 'Đăng nhập để đồng bộ';
+
+  @override
+  String get logout => 'Đăng xuất';
+
+  @override
+  String loggedInAs(String email) {
+    return 'Đăng nhập: $email';
+  }
+
+  @override
+  String get notConnected => 'Chưa kết nối với đối phương';
 }
