@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import '../../data/models/couple_profile.dart';
 import '../../data/models/diary_entry.dart';
 import '../../data/models/milestone.dart';
 import 'storage_service.dart';
@@ -77,6 +78,39 @@ class SyncService {
 
     await batch.commit();
     return true;
+  }
+
+  /// Khởi tạo listener dữ liệu hồ sơ đôi
+  Stream<CoupleProfile?> streamCoupleProfile(String coupleId) {
+    return _firestore
+        .collection('couples')
+        .doc(coupleId)
+        .snapshots()
+        .map((snapshot) {
+      final data = snapshot.data();
+      if (data == null) return null;
+      return CoupleProfile(
+        person1Name: data['person1Name'] ?? '',
+        person2Name: data['person2Name'] ?? '',
+        startDate: (data['startDate'] as Timestamp).toDate(),
+        isDarkMode: data['isDarkMode'] ?? true,
+        backgroundImagePath: data['backgroundImagePath'],
+        // Lưu ý: person1PhotoPath và person2PhotoPath thường là local path,
+        // trong phiên bản này chúng ta tập trung vào metadata trước.
+      );
+    });
+  }
+
+  /// Push couple profile lên Cloud
+  Future<void> syncCoupleProfile(String coupleId, CoupleProfile profile) async {
+    await _firestore.collection('couples').doc(coupleId).set({
+      'person1Name': profile.person1Name,
+      'person2Name': profile.person2Name,
+      'startDate': Timestamp.fromDate(profile.startDate),
+      'isDarkMode': profile.isDarkMode,
+      'backgroundImagePath': profile.backgroundImagePath,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   /// Khởi tạo listener dữ liệu nhật ký
