@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/couple_profile.dart';
 import '../models/diary_entry.dart';
 import '../models/milestone.dart';
@@ -28,6 +29,7 @@ class AppProvider extends ChangeNotifier {
   // Sync
   final SyncService _syncService = SyncService();
   String? _currentCoupleId;
+  StreamSubscription? _profileSub;
   StreamSubscription? _diarySub;
   StreamSubscription? _milestoneSub;
 
@@ -67,6 +69,15 @@ class AppProvider extends ChangeNotifier {
     final langCode = settingsBox.get(AppConstants.keyLocale, defaultValue: 'vi');
     _locale = Locale(langCode);
 
+    // Auto-start sync if logged in
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final coupleId = await _syncService.getCoupleId();
+      if (coupleId != null) {
+        startSync(coupleId);
+      }
+    }
+
     _isLoading = false;
     notifyListeners();
   }
@@ -77,6 +88,11 @@ class AppProvider extends ChangeNotifier {
     final coupleBox = Hive.box<CoupleProfile>(AppConstants.hiveBoxCouple);
     await coupleBox.put(AppConstants.keyCouple, profile);
     _coupleProfile = profile;
+
+    // Sync to Cloud
+    if (_currentCoupleId != null) {
+      _syncService.syncCoupleProfile(_currentCoupleId!, profile);
+    }
 
     // Generate auto milestones
     await _generateAutoMilestones(profile.startDate);
@@ -274,10 +290,39 @@ class AppProvider extends ChangeNotifier {
   void startSync(String coupleId) {
     _currentCoupleId = coupleId;
 
+    // Profile Sync
+    _profileSub?.cancel();
+    _profileSub = _syncService.streamCoupleProfile(coupleId).listen((profile) async {
+      if (profile != null) {
+        final coupleBox = Hive.box<CoupleProfile>(AppConstants.hiveBoxCouple);
+        // Cập nhật nếu metadata thay đổi (đơn giản hóa việc so sánh)
+        if (_coupleProfile == null || 
+            _coupleProfile!.startDate != profile.startDate ||
+            _coupleProfile!.person1Name != profile.person1Name ||
+            _coupleProfile!.person2Name != profile.person2Name) {
+          
+          // Giữ lại local photo paths nếu remote không có (Firestore không lưu local paths)
+          final updatedProfile = CoupleProfile(
+            person1Name: profile.person1Name,
+            person2Name: profile.person2Name,
+            startDate: profile.startDate,
+            isDarkMode: profile.isDarkMode,
+            backgroundImagePath: profile.backgroundImagePath ?? _coupleProfile?.backgroundImagePath,
+            person1PhotoPath: _coupleProfile?.person1PhotoPath,
+            person2PhotoPath: _coupleProfile?.person2PhotoPath,
+          );
+          
+          await coupleBox.put(AppConstants.keyCouple, updatedProfile);
+          _coupleProfile = updatedProfile;
+          notifyListeners();
+        }
+      }
+    });
+
+    // Diary Sync (Non-destructive)
     _diarySub?.cancel();
     _diarySub = _syncService.streamDiaryEntries(coupleId).listen((entries) async {
       final diaryBox = Hive.box<DiaryEntry>(AppConstants.hiveBoxDiary);
-      await diaryBox.clear();
       for (var entry in entries) {
         await diaryBox.put(entry.id, entry);
       }
@@ -286,10 +331,10 @@ class AppProvider extends ChangeNotifier {
       notifyListeners();
     });
 
+    // Milestone Sync (Non-destructive)
     _milestoneSub?.cancel();
     _milestoneSub = _syncService.streamMilestones(coupleId).listen((milestones) async {
       final milestonesBox = Hive.box<Milestone>(AppConstants.hiveBoxMilestones);
-      await milestonesBox.clear();
       for (var milestone in milestones) {
         await milestonesBox.put(milestone.id, milestone);
         await NotificationService().scheduleAnniversaryReminder(milestone);
@@ -302,6 +347,7 @@ class AppProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _profileSub?.cancel();
     _diarySub?.cancel();
     _milestoneSub?.cancel();
     super.dispose();
