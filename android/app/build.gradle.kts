@@ -39,6 +39,31 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+}
+
+tasks.whenTaskAdded {
+    if (name == "assembleRelease") {
+        doLast {
+            val variant = android.applicationVariants.find { it.buildType.name == "release" }
+            if (variant != null) {
+                variant.outputs.forEach { output ->
+                    val apk = output.outputFile
+                    if (apk.exists()) {
+                        val newName = "${variant.applicationId}-v${variant.versionName}-${variant.versionCode}-release.apk"
+                        val newFile = File(apk.parentFile, newName)
+                        if (apk.renameTo(newFile)) {
+                            println("APK renamed to $newName")
+                        } else {
+                            println("Failed to rename APK to $newName")
+                            apk.copyTo(newFile, overwrite = true)
+                            apk.delete()
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 flutter {
