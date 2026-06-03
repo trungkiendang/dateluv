@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:date_luv/l10n/generated/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'dart:io';
+import '../../shared/widgets/app_image.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/date_helper.dart';
 import '../../data/models/diary_entry.dart';
@@ -372,7 +372,7 @@ class _DiaryCard extends StatelessWidget {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: Image.file(File(entry.imagePaths[i]), fit: BoxFit.cover),
+                        child: appImage(entry.imagePaths[i], fit: BoxFit.cover),
                       ),
                     ),
                   ),

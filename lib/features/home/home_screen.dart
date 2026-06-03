@@ -3,12 +3,12 @@ import 'package:date_luv/l10n/generated/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
-import 'dart:io';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/date_helper.dart';
 import '../../data/repositories/app_provider.dart';
 import '../../shared/widgets/common_widgets.dart';
 import '../../shared/widgets/share_bottom_sheet.dart';
+import '../../shared/widgets/app_image.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -115,12 +115,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       return Positioned.fill(
         child: Stack(
           children: [
-            Image.file(
-              File(profile.backgroundImagePath!),
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-            ),
+            appImage(profile.backgroundImagePath!, fit: BoxFit.cover, width: double.infinity, height: double.infinity),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -313,7 +308,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           child: photoPath != null
               ? ClipOval(
-                  child: Image.file(File(photoPath), fit: BoxFit.cover),
+                  child: appImage(photoPath, fit: BoxFit.cover, height: 60, width: 60),
                 )
               : const Icon(Icons.person, color: Colors.white, size: 38),
         ),

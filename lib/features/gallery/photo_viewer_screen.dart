@@ -4,7 +4,7 @@ import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'dart:io';
+import '../../shared/widgets/app_image.dart';
 import '../../core/theme/app_theme.dart';
 
 class PhotoViewerScreen extends StatefulWidget {
@@ -73,7 +73,7 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
               return PhotoViewGalleryPageOptions(
                 imageProvider: isNetwork 
                     ? CachedNetworkImageProvider(widget.imagePaths[i]) as ImageProvider
-                    : FileImage(File(widget.imagePaths[i])) as ImageProvider,
+                    : (appDecorationImage(widget.imagePaths[i])?.image ?? const AssetImage('')),
                 heroAttributes: PhotoViewHeroAttributes(tag: 'photo_$i'),
                 minScale: PhotoViewComputedScale.contained,
                 maxScale: PhotoViewComputedScale.covered * 3,

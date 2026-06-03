@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:date_luv/l10n/generated/app_localizations.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter/foundation.dart';
 import '../../core/services/screenshot_service.dart';
 import '../../core/theme/app_theme.dart';
 import './share_card_widget.dart';
@@ -63,7 +64,7 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
       }
 
       await Share.shareXFiles(
-        [XFile(file.path)], 
+        [file], 
         text: shareText,
         sharePositionOrigin: sharePositionOrigin,
       );

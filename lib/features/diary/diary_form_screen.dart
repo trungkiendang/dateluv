@@ -3,7 +3,7 @@ import 'package:date_luv/l10n/generated/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'dart:io';
+import '../../shared/widgets/app_image.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/date_helper.dart';
 import '../../data/models/diary_entry.dart';
@@ -239,7 +239,7 @@ class _DiaryFormScreenState extends State<DiaryFormScreen> {
                                     ),
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(16),
-                                      child: Image.file(File(_imagePaths[index]), fit: BoxFit.cover),
+                                      child: appImage(_imagePaths[index], fit: BoxFit.cover),
                                     ),
                                   ),
                                   Positioned(

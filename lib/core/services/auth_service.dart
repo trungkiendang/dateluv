@@ -6,12 +6,26 @@ import 'dart:math';
 
 class AuthService {
   FirebaseAuth get _auth => FirebaseAuth.instance;
-  GoogleSignIn get _googleSignIn => GoogleSignIn(
-    clientId: defaultTargetPlatform == TargetPlatform.iOS 
-      ? '60683918105-erapd2ob9mkc9h8qohj22ns5f92s9qa7.apps.googleusercontent.com' 
-      : null,
-  );
+  GoogleSignIn? _googleSignIn;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+
+  GoogleSignIn get googleSignIn {
+    if (_googleSignIn == null) {
+      if (kIsWeb) {
+        _googleSignIn = GoogleSignIn(
+          clientId: const String.fromEnvironment('WEB_OAUTH_CLIENT_ID',
+            defaultValue: ''),
+        );
+      } else {
+        _googleSignIn = GoogleSignIn(
+          clientId: defaultTargetPlatform == TargetPlatform.iOS
+            ? '60683918105-erapd2ob9mkc9h8qohj22ns5f92s9qa7.apps.googleusercontent.com'
+            : null,
+        );
+      }
+    }
+    return _googleSignIn!;
+  }
 
   User? get currentUser {
     try {
@@ -31,23 +45,24 @@ class AuthService {
 
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      // Trigger the authentication flow
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null; // User canceled
+      UserCredential userCredential;
 
-      // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      if (kIsWeb) {
+        // Dùng Firebase Auth popup trên web
+        final provider = GoogleAuthProvider();
+        userCredential = await _auth.signInWithPopup(provider);
+      } else {
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+        if (googleUser == null) return null;
 
-      // Create a new credential
-      final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Once signed in, return the UserCredential
-      final userCredential = await _auth.signInWithCredential(credential);
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final OAuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        userCredential = await _auth.signInWithCredential(credential);
+      }
       
-      // Save user to Firestore (non-critical, don't fail sign in if this fails)
       try {
         await _saveUserToFirestore(userCredential.user).timeout(
           const Duration(seconds: 5),
@@ -55,7 +70,6 @@ class AuthService {
         );
       } catch (e) {
         if (kDebugMode) print('APP_LOG: Firestore metadata update skipped/failed: $e');
-        // We continue because authentication actually succeeded
       }
       
       return userCredential;
@@ -66,7 +80,9 @@ class AuthService {
   }
 
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    if (!kIsWeb && _googleSignIn != null) {
+      await _googleSignIn!.signOut();
+    }
     await _auth.signOut();
   }
 

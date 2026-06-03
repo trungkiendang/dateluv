@@ -3,7 +3,7 @@ import 'package:date_luv/l10n/generated/app_localizations.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'dart:io';
+import '../../shared/widgets/app_image.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/repositories/app_provider.dart';
 
@@ -159,10 +159,7 @@ class _PhotoCard extends StatelessWidget {
         onTap: onTap,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: Image.file(
-            File(path),
-            fit: BoxFit.cover,
-          ),
+          child: appImage(path, fit: BoxFit.cover),
         ),
       ),
     );

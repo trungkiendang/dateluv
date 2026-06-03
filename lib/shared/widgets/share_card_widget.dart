@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:date_luv/l10n/generated/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -42,12 +42,8 @@ class ShareCardWidget extends StatelessWidget {
   }
 
   DecorationImage? _getBackgroundImage() {
-    if (profile.backgroundImagePath == null) return null;
-    final file = File(profile.backgroundImagePath!);
-    if (!file.existsSync()) return null;
-    
-    return DecorationImage(
-      image: FileImage(file),
+    return appDecorationImage(
+      profile.backgroundImagePath,
       fit: BoxFit.cover,
       colorFilter: ColorFilter.mode(
         Colors.black.withValues(alpha: 0.6),
@@ -215,15 +211,13 @@ class ShareCardWidget extends StatelessWidget {
         children: [
           const SizedBox(height: 40),
           if (entry!.imagePaths.isNotEmpty)
-             ClipRRect(
-               borderRadius: BorderRadius.circular(20),
-               child: Image.file(
-                 File(entry!.imagePaths.first), 
-                 height: 300, 
-                 width: double.infinity, 
-                 fit: BoxFit.cover
-               ),
-             ),
+           appImage(
+                entry!.imagePaths.first, 
+                height: 300, 
+                width: double.infinity, 
+                fit: BoxFit.cover,
+                borderRadius: 20,
+              ),
           const SizedBox(height: 30),
           Text(entry!.emoji, style: const TextStyle(fontSize: 44)),
           const SizedBox(height: 12),
@@ -272,13 +266,7 @@ class ShareCardWidget extends StatelessWidget {
   }
 
   Widget _avatar(String? path, {double size = 80}) {
-    DecorationImage? image;
-    if (path != null) {
-      final file = File(path);
-      if (file.existsSync()) {
-        image = DecorationImage(image: FileImage(file), fit: BoxFit.cover);
-      }
-    }
+    final image = appDecorationImage(path, fit: BoxFit.cover);
 
     return Container(
       width: size,

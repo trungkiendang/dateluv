@@ -4,11 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:io';
+import 'dart:io' as io;
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/date_helper.dart';
 import '../../data/repositories/app_provider.dart';
 import '../../shared/widgets/common_widgets.dart';
+import '../../shared/widgets/app_image.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -154,7 +155,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       height: 160,
                                       width: double.infinity,
                                       child: _bgPhoto != null
-                                          ? Image.file(File(_bgPhoto!), fit: BoxFit.cover)
+                                          ? appImage(_bgPhoto, fit: BoxFit.cover, height: 160, width: double.infinity)
                                           : Container(
                                               decoration: const BoxDecoration(
                                                 gradient: LinearGradient(colors: AppColors.primaryGradient),
@@ -461,7 +462,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     gradient: LinearGradient(colors: colors),
                   ),
                   child: photoPath != null
-                      ? ClipOval(child: Image.file(File(photoPath), fit: BoxFit.cover))
+                      ? ClipOval(child: appImage(photoPath, fit: BoxFit.cover, height: 60, width: 60))
                       : const Icon(Icons.person, color: Colors.white, size: 28),
                 ),
                 Positioned(

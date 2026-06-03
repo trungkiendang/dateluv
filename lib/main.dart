@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -14,12 +15,13 @@ import 'app.dart';
 
 void main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  if (!kIsWeb) {
+    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  }
 
   try {
     print('APP_LOG: Starting initialization...');
 
-    // Hệ thống thanh trạng thái trong suốt
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -27,14 +29,12 @@ void main() async {
       ),
     );
 
-    // 1. Initialize Firebase FIRST and alone
     print('APP_LOG: Initializing Firebase...');
     await FirebaseService.init();
 
-    // 2. Initialize other services in parallel
     print('APP_LOG: Initializing other services...');
     await Future.wait([
-      _safeInit('Notifications', () => NotificationService().init()),
+      if (!kIsWeb) _safeInit('Notifications', () => NotificationService().init()),
       _safeInit('Hive', () async {
         await Hive.initFlutter();
         Hive.registerAdapter(CoupleProfileAdapter());
@@ -48,7 +48,6 @@ void main() async {
       }),
     ]);
 
-    // Khóa hướng màn hình
     await SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -72,7 +71,6 @@ void main() async {
     print('APP_LOG: CRITICAL ERROR DURING INIT: $e');
     print(stack);
     
-    // Fallback: Run app even if init failed partially
     runApp(
       ChangeNotifierProvider(
         create: (_) => AppProvider()..init(),
@@ -80,8 +78,9 @@ void main() async {
       ),
     );
   } finally {
-    print('APP_LOG: Removing Splash Screen...');
-    FlutterNativeSplash.remove();
+    if (!kIsWeb) {
+      FlutterNativeSplash.remove();
+    }
   }
 }
 

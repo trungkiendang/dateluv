@@ -3,12 +3,12 @@ import 'package:date_luv/l10n/generated/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'dart:io';
-import '../../core/utils/date_helper.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/date_helper.dart';
 import '../../data/models/couple_profile.dart';
 import '../../data/repositories/app_provider.dart';
 import '../../shared/widgets/common_widgets.dart';
+import '../../shared/widgets/app_image.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -330,10 +330,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   child: photoPath != null
                       ? ClipOval(
-                          child: Image.file(
-                            File(photoPath),
-                            fit: BoxFit.cover,
-                          ),
+                          child: appImage(photoPath, fit: BoxFit.cover, width: 80, height: 80),
                         )
                       : const Icon(Icons.person, color: Colors.white, size: 44),
                 ),
