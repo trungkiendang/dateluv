@@ -28,7 +28,8 @@
 - **Routing:** `web/404.html` redirects all paths to `/` for SPA support.
 - **Firebase web:** config in `lib/core/services/firebase_service.dart:16-24`. Update `appId` with the real web app ID from Firebase Console.
 - **CI/CD:** `.github/workflows/deploy-web.yml` auto-deploys on push to `main`.
-- **Tính năng không hoạt động trên web:** Google Sign-In, local_auth (biometrics), push notifications.
+- **Tính năng không hoạt động trên web:** push notifications, local_auth (biometrics) — được guard bằng `kIsWeb`. Google Sign-In dùng `signInWithPopup` (cần cấu hình OAuth web client ID).
+- **Cross-platform images:** `lib/shared/widgets/app_image.dart` — `appImage()` và `appDecorationImage()` xử lý cả file path (mobile) và blob/URL path (web).
 
 ## Non-obvious constraints
 
