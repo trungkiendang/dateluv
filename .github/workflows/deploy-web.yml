@@ -24,7 +24,7 @@ jobs:
           channel: stable
       - run: flutter pub get
       - run: flutter gen-l10n
-      - run: flutter build web --base-href /dateluv/
+      - run: flutter build web --base-href /
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
