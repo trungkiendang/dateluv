@@ -10,7 +10,18 @@ class FirebaseService {
         return;
       }
 
-      if (defaultTargetPlatform == TargetPlatform.iOS) {
+      if (kIsWeb) {
+        await Firebase.initializeApp(
+          options: const FirebaseOptions(
+            apiKey: 'AIzaSyAbDA0F3of6VBTVbF2TpMBpR_Wkorp2LVE',
+            appId: '1:60683918105:web:c47a6055c315c470788388',
+            messagingSenderId: '60683918105',
+            projectId: 'dateluv-372d0',
+            storageBucket: 'dateluv-372d0.firebasestorage.app',
+            authDomain: 'dateluv-372d0.firebaseapp.com',
+          ),
+        );
+      } else if (defaultTargetPlatform == TargetPlatform.iOS) {
         await Firebase.initializeApp(
           options: const FirebaseOptions(
             apiKey: 'AIzaSyAbDA0F3of6VBTVbF2TpMBpR_Wkorp2LVE',
@@ -36,7 +47,9 @@ class FirebaseService {
       if (kDebugMode) {
         print('Firebase init error: $e');
       }
-      rethrow; // Rethrow to let main handle critical failure
+      if (!kIsWeb) {
+        rethrow;
+      }
     }
   }
 }
