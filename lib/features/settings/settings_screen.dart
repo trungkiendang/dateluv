@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:io' as io;
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/date_helper.dart';
 import '../../data/repositories/app_provider.dart';
@@ -360,7 +359,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildSyncSection(AppProvider provider, AppLocalizations l10n) {
-    final user = FirebaseAuth.instance.currentUser;
+    User? user;
+    try {
+      user = FirebaseAuth.instance.currentUser;
+    } catch (_) {}
     final isSyncing = provider.isSyncEnabled;
 
     return GlassCard(

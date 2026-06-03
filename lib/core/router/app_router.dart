@@ -29,14 +29,15 @@ class AppRouter {
         final hasProfile = provider.hasProfile;
 
         // 1. Nếu chưa đăng nhập:
-        // Chỉ cho phép ở /login hoặc /onboarding (để tạo profile offline)
         if (!isLoggedIn) {
-          // Nếu đang ở /pairing (yêu cầu login), đá về /login
+          // /pairing yêu cầu login → đá về /login
           if (isPairingRoute) return '/login';
-          
-          // Nếu đã có profile (đang dùng offline) và cố vào /login hoặc /onboarding:
-          // Cho phép để họ có thể đăng nhập hoặc xem onboarding
-          return null; 
+          // Chưa có profile → bắt buộc vào /login hoặc /onboarding
+          if (!hasProfile && !isLoginRoute && !isOnboardingRoute) {
+            return '/login';
+          }
+          // Đã có profile (offline) hoặc đang ở login/onboarding → giữ nguyên
+          return null;
         }
 
         // 2. Nếu ĐÃ đăng nhập:

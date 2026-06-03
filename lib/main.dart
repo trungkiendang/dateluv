@@ -36,7 +36,11 @@ void main() async {
     await Future.wait([
       if (!kIsWeb) _safeInit('Notifications', () => NotificationService().init()),
       _safeInit('Hive', () async {
-        await Hive.initFlutter();
+        if (kIsWeb) {
+          Hive.init('');
+        } else {
+          await Hive.initFlutter();
+        }
         Hive.registerAdapter(CoupleProfileAdapter());
         Hive.registerAdapter(DiaryEntryAdapter());
         Hive.registerAdapter(MilestoneAdapter());
@@ -48,10 +52,12 @@ void main() async {
       }),
     ]);
 
-    await SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
+    if (!kIsWeb) {
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+    }
 
     print('APP_LOG: Initializing AppProvider...');
     final appProvider = AppProvider();

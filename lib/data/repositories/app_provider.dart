@@ -74,20 +74,22 @@ class AppProvider extends ChangeNotifier {
     _locale = Locale(langCode);
 
     // Auto-start sync if logged in
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      try {
-        final coupleId = await _syncService.getCoupleId().timeout(
-          const Duration(seconds: 5),
-          onTimeout: () => null,
-        );
-        if (coupleId != null) {
-          startSync(coupleId);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        try {
+          final coupleId = await _syncService.getCoupleId().timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => null,
+          );
+          if (coupleId != null) {
+            startSync(coupleId);
+          }
+        } catch (e) {
+          if (kDebugMode) print('APP_LOG: Initial sync check failed: $e');
         }
-      } catch (e) {
-        if (kDebugMode) print('APP_LOG: Initial sync check failed: $e');
       }
-    }
+    } catch (_) {} // FirebaseAuth không available (e.g. web init thất bại)
 
     _isLoading = false;
     notifyListeners();
